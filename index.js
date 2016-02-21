@@ -1,6 +1,7 @@
 var config = require('./config.js')
 var utils = require('./utils.js')
 var request = require('request')
+var log = require('logatim')
 
 utils.send({
   method: 'get_account_info'
@@ -21,10 +22,15 @@ utils.send({
   console.log(data)
 })
 
+var oldTime = +new Date
 function getStat() {
   utils.stat(function (stat) {
+    var newTime = +new Date
+    log.setLevel('debug')
+    log.blue('DELAY: ' + (newTime - oldTime)).info()
+    oldTime = newTime
     if (!stat.p_new) {
-      console.log('timeout: Fuck');
+      log.red.error('Timeout: Fuck')
     } else {
       console.log(stat.p_new)
     }
