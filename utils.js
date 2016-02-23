@@ -2,6 +2,7 @@ var config = require('./config.js')
 var request = require('request')
 var crypto = require('crypto')
 var _ = require('lodash')
+var log = require('logatim')
 
 function sign (params) {
   var hash = crypto.createHash('md5')
@@ -32,7 +33,12 @@ function send (params, extra, callback) {
   params['secret_key'] = config.SECRET_KEY
   params['sign'] = sign(params)
   request.post(config.URL, {form: _.extend(params, extra)}, function (err, res, body) {
-    callback(JSON.parse(body))
+    try {
+      var data = JSON.parse(body)
+    } catch(e) {
+      data = {}
+    }
+    callback(data)
   })
 }
 
@@ -41,10 +47,36 @@ function stat (callback) {
     try {
       var data = JSON.parse(body)
     } catch(e) {
-      data = {}
+      data = {code: 400, msg: 'JSON解析错误或者超时'}
+    }
+    if (data.code) {
+      log.red('Error: ' + data.msg).error()
     }
     callback(data)
   })
+}
+
+exports.sellAll = function (info, callback) {
+  send({
+    method: 'sell_market',
+    coin_type: 1,
+    amount: info.available_btc_display
+  }, callback)
+}
+
+exports.buy = function (money, callback) {
+  send({
+    method: 'buy_market',
+    coin_type: 1,
+    amount: money
+  }, callback)
+}
+
+exports.getOrders = function (callback) {
+  send({
+    method: 'get_orders',
+    coin_type: 1
+  }, callback)
 }
 
 exports.stat = stat
