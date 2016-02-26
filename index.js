@@ -5,14 +5,21 @@ var log = require('logatim')
 var oldTime = +new Date
 var _ = require('lodash')
 var send = utils.send
-log.setLevel('info')
-var LEN = 100
+log.setLevel('debug')
+var LEN = 1000
 var info = {}
+var stats = []
+
+var gapToBuy = 4 // 低于 (均线 - gapToBuy) 就去买
+var gapToSell = 2 // 高于 (买入价格 + gapToSell) 就去卖
+var lowerGapToSell = -4 // 亏损了多少就卖
+var TIME_TO_WAIT = 1000 * 15 * 30 // 等 15 分钟再交易
 
 function updateInfo() {
   utils.send({
     method: 'get_account_info'
   }, function (data) {
+    console.log(data)
     if (!data.code) {
       info = data
       // console.log(info)
@@ -20,26 +27,48 @@ function updateInfo() {
   })
 }
 
+updateInfo()
+
 var lastPrice = null
+var boughtPrice = null
+var total = 0
+var avgPrice = 0
+var hasBought = false
+var lostMoney = false
 
 function getStat() {
   utils.stat(function (stat) {
+    if (lostMoney) { // 如果是亏损了，先休息 30 分钟再交易
+      log.red('Lost...Waiting : ' + (lastPrice - boughtPrice)).info()
+      return setTimeout(function () {
+        stats = []
+        getStat()
+        lostMoney = false
+      }, TIME_TO_WAIT)
+    }
     var newTime = +new Date
     if (!stat.p_new) {
-      log.red('Timeout: Fuck').debug()
+      // log.red('Timeout: Fuck').debug()
     } else {
-      log.green('---> Get Price: ' + stat.p_new.toFixed(2))
-        .blue('\tDELAY: ' + (newTime - oldTime))
-        .debug()
+      // log.green('---> Get Price: ' + stat.p_new.toFixed(2))
+      //   .blue('\tDELAY: ' + (newTime - oldTime))
+      //   .debug()
       oldTime = newTime
       if (stat.p_new !== lastPrice) {
         lastPrice = stat.p_new
         stats.push(lastPrice)
-        log.yellow('New Price: ' + lastPrice).debug()
+        total += lastPrice
+        // log.yellow('New Price: ' + lastPrice).debug()
         if (stats.length >= LEN) {
+          total -= stats[0]
           trade()
           stats.shift()
+          avgPrice = +(total / stats.length).toFixed(2)
+          log.yellow('Average: ' + avgPrice).info()
+        } else {
+          log.yellow('Not enought data, getting...').info()
         }
+        // console.log(stats)
       }
     }
     getStat()
@@ -50,90 +79,33 @@ function init () {
   getStat()
 }
 
-var stats = []
 function trade () {
-  diff()
-  updateInfo()
-}
-
-function diff () {
-  var prev = stats[0]
-  var dists = []
-  var longDist = 0
-  stats.forEach(function (price, i) {
-    if (i === 0) return
-    var dist = price - prev
-    dists.push(dist)
-    longDist += dist
-    prev = price
-  })
-  buyOrSell(longDist)
-}
-
-var flyingIndex = 0
-var descentingIndex = 0
-var hasBought = false
-var oldLongDist = 0
-var longDists = []
-
-function buyOrSell(longDist) {
-  if (!oldLongDist) {
-    oldLongDist = longDist
-    return
-  }
-  var padding = longDist - oldLongDist
-  longDists.push(padding)
-  console.log(longDists)
-  var THRESHOLD = 3
-  // if (isFading()) sell()
-  // else buy()
-  // keep it small
-  if (longDists.length >= LEN) {
-    longDists.shift()
-  }
-}
-
-var oldAvg = null
-var fadeCount = 0
-var fadeStack = 10
-function isFading () {
-  var avg = 0
-  for (var i = 0; i < 10; i++) {
-    avg += longDists[longDists.length - i - 1]
-  }
-  // console.log(longDists, avg, oldAvg)
-  if (!oldAvg || !avg) {
-    isFaded = true
-  } else {
-    if (avg - oldAvg < 0) { fadeCount++ } else { fadeCount-- }
-    if (fadeCount > fadeStack) { fadeCount = fadeStack } else if (fadeCount < 0) { fadeCount = 0 }
-    if (fadeCount >= fadeStack) { isFaded = true } else { isFaded = false }
-  }
-  oldAvg = avg
-  return isFaded
-}
-
-function sell () {
   if (hasBought) {
-    log.yellow('Sell In: ' + _.last(stats)).info()
-    // utils.sellAll(info, function (data) {
-    //   if (!data.code) {
-    //     console.log(data)
-    //   }
-    // })
-    hasBought = false
-  }
-}
-
-function buy () {
-  if (!hasBought) {
-    log.blue('Bug In: ' + _.last(stats)).info()
-    // utils.buy(200, function (data) {
-    //   if (!data.code) {
-    //     console.log(data)
-    //   }
-    // })
-    hasBought = true
+    var dist = lastPrice - boughtPrice
+    log.blue('Money lastPrice - boughtPrice ').red(dist).info()
+    if (dist >= gapToSell || dist <= lowerGapToSell) {
+      log.blue('Sell out : ' + lastPrice).info()
+      utils.sellAll(info)
+      hasBought = false
+      if (dist <= lowerGapToSell) {
+        lostMoney = true
+      }
+      updateInfo()
+    } else {
+      log.yellow('Waiting to sell...').info()
+    }
+  } else {
+    var dist = avgPrice - lastPrice
+    log.blue('Money avgPrice - lastPrice ').red(dist).info()
+    if (dist >= gapToBuy) {
+      log.blue('Buy in : ' + lastPrice).info()
+      utils.buyAll(info)
+      hasBought = true
+      boughtPrice = lastPrice
+      updateInfo()
+    } else {
+      log.yellow('Waiting to buy...').info()
+    }
   }
 }
 

@@ -38,7 +38,7 @@ function send (params, extra, callback) {
     } catch(e) {
       data = {}
     }
-    callback(data)
+    callback && callback(data)
   })
 }
 
@@ -70,6 +70,10 @@ exports.buy = function (money, callback) {
     coin_type: 1,
     amount: money
   }, callback)
+}
+
+exports.buyAll = function (info, callback) {
+  exports.buy(info.available_cny_display, callback)
 }
 
 exports.getOrders = function (callback) {
