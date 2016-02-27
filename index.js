@@ -101,10 +101,10 @@ function trade () {
       pending = true
       utils.sellAll(info, function (data) {
         pending = false
+        if (dist <= lowerGapToSell) {
+          lostMoney = true
+        }
       })
-      if (dist <= lowerGapToSell) {
-        lostMoney = true
-      }
       updateInfo()
     } else {
       log.yellow('Waiting to sell...').info()
