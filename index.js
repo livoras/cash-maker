@@ -69,7 +69,7 @@ function getStat() {
         stats.push(lastPrice)
         total += lastPrice
         // log.yellow('New Price: ' + lastPrice).debug()
-        if (stats.length >= LEN) {
+        if (stats.length > LEN) {
           total -= stats[0]
           stats.shift()
           avgPrice = +(total / stats.length).toFixed(2)
@@ -99,10 +99,10 @@ function trade () {
     if (dist >= gapToSell || dist <= lowerGapToSell) {
       log.blue('Sell out : ' + lastPrice).info()
       pending = true
-      utils.sellAll(info, function () {
+      utils.sellAll(info, function (data) {
+        if (!data.code) hasBought = false
         pending = false
       })
-      hasBought = false
       if (dist <= lowerGapToSell) {
         lostMoney = true
       }
@@ -117,9 +117,9 @@ function trade () {
       log.blue('Buy in : ' + lastPrice).info()
       pending = true
       utils.buyAll(info, function () {
+        if (!data.code) hasBought = true
         pending = false
       })
-      hasBought = true
       boughtPrice = lastPrice
       updateInfo()
     } else {
