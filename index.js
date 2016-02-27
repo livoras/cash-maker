@@ -14,7 +14,7 @@ if (!testing) {
   var LEN = 1000
   var gapToBuy = 4 // 低于 (均线 - gapToBuy) 就去买
   var gapToSell = 2 // 高于 (买入价格 + gapToSell) 就去卖
-  var lowerGapToSell = -4 // 亏损了多少就卖
+  var lowerGapToSell = -2 // 亏损了多少就卖
   var TIME_TO_WAIT = 1000 * 15 * 30 // 等 15 分钟再交易
 } else {
   var LEN = 10
