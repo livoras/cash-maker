@@ -116,7 +116,7 @@ function trade () {
     if (dist >= gapToBuy) {
       log.blue('Buy in : ' + lastPrice).info()
       pending = true
-      utils.buyAll(info, function () {
+      utils.buyAll(info, function (data) {
         if (!data.code) hasBought = true
         pending = false
       })
