@@ -43,7 +43,6 @@ var lastPrice = null
 var boughtPrice = null
 var total = 0
 var avgPrice = 0
-var hasBought = false
 var lostMoney = false
 
 function getStat() {
@@ -52,6 +51,7 @@ function getStat() {
       log.red('Lost...Waiting : ' + (lastPrice - boughtPrice)).info()
       return setTimeout(function () {
         stats = []
+        total = 0
         getStat()
         lostMoney = false
       }, TIME_TO_WAIT)
@@ -69,7 +69,7 @@ function getStat() {
         stats.push(lastPrice)
         total += lastPrice
         // log.yellow('New Price: ' + lastPrice).debug()
-        if (stats.length > LEN) {
+        if (stats.length >= LEN) {
           total -= stats[0]
           stats.shift()
           avgPrice = +(total / stats.length).toFixed(2)
@@ -93,14 +93,13 @@ var pending = false
 
 function trade () {
   if (pending) return log.yellow('pending....return').info()
-  if (hasBought) {
+  if (hasBtc()) {
     var dist = lastPrice - boughtPrice
     log.blue('Money lastPrice - boughtPrice ').red(dist).info()
     if (dist >= gapToSell || dist <= lowerGapToSell) {
       log.blue('Sell out : ' + lastPrice).info()
       pending = true
       utils.sellAll(info, function (data) {
-        if (!data.code) hasBought = false
         pending = false
       })
       if (dist <= lowerGapToSell) {
@@ -117,7 +116,6 @@ function trade () {
       log.blue('Buy in : ' + lastPrice).info()
       pending = true
       utils.buyAll(info, function (data) {
-        if (!data.code) hasBought = true
         pending = false
       })
       boughtPrice = lastPrice
@@ -126,6 +124,11 @@ function trade () {
       log.yellow('Waiting to buy...').info()
     }
   }
+}
+
+function hasBtc() {
+  console.log(info.available_btc_display * 1)
+  return (info.available_btc_display * 1 !== 0)
 }
 
 init()
