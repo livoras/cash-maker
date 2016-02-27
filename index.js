@@ -71,10 +71,10 @@ function getStat() {
         // log.yellow('New Price: ' + lastPrice).debug()
         if (stats.length >= LEN) {
           total -= stats[0]
-          trade()
           stats.shift()
           avgPrice = +(total / stats.length).toFixed(2)
           log.yellow('Average: ' + avgPrice).info()
+          trade()
         } else {
           log.yellow('Not enought data, getting...').info()
         }
