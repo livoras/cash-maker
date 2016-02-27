@@ -79,13 +79,19 @@ function init () {
   getStat()
 }
 
+var pending = true
+
 function trade () {
+  if (pending) return log.yellow('pending....return').info()
   if (hasBought) {
     var dist = lastPrice - boughtPrice
     log.blue('Money lastPrice - boughtPrice ').red(dist).info()
     if (dist >= gapToSell || dist <= lowerGapToSell) {
       log.blue('Sell out : ' + lastPrice).info()
-      utils.sellAll(info)
+      pending = true
+      utils.sellAll(info, function () {
+        pending = false
+      })
       hasBought = false
       if (dist <= lowerGapToSell) {
         lostMoney = true
@@ -99,7 +105,10 @@ function trade () {
     log.blue('Money avgPrice - lastPrice ').red(dist).info()
     if (dist >= gapToBuy) {
       log.blue('Buy in : ' + lastPrice).info()
-      utils.buyAll(info)
+      pending = true
+      utils.buyAll(info, function () {
+        pending = false
+      })
       hasBought = true
       boughtPrice = lastPrice
       updateInfo()
