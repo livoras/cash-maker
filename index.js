@@ -87,6 +87,7 @@ function getStat() {
 
 function init () {
   getStat()
+  setInterval(updateInfo, 100)
 }
 
 var pending = false
