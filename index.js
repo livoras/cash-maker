@@ -6,14 +6,24 @@ var oldTime = +new Date
 var _ = require('lodash')
 var send = utils.send
 log.setLevel('debug')
-var LEN = 1000
 var info = {}
 var stats = []
+var testing = false
 
-var gapToBuy = 4 // 低于 (均线 - gapToBuy) 就去买
-var gapToSell = 2 // 高于 (买入价格 + gapToSell) 就去卖
-var lowerGapToSell = -4 // 亏损了多少就卖
-var TIME_TO_WAIT = 1000 * 15 * 30 // 等 15 分钟再交易
+if (!testing) {
+  var LEN = 1000
+  var gapToBuy = 4 // 低于 (均线 - gapToBuy) 就去买
+  var gapToSell = 2 // 高于 (买入价格 + gapToSell) 就去卖
+  var lowerGapToSell = -4 // 亏损了多少就卖
+  var TIME_TO_WAIT = 1000 * 15 * 30 // 等 15 分钟再交易
+} else {
+  var LEN = 10
+  var gapToBuy = 0.1 // 低于 (均线 - gapToBuy) 就去买
+  var gapToSell = 0.1 // 高于 (买入价格 + gapToSell) 就去卖
+  var lowerGapToSell = -0.1 // 亏损了多少就卖
+  var TIME_TO_WAIT = 1000// * 15 * 30 // 等 15 分钟再交易
+}
+
 
 function updateInfo() {
   utils.send({
@@ -79,7 +89,7 @@ function init () {
   getStat()
 }
 
-var pending = true
+var pending = false
 
 function trade () {
   if (pending) return log.yellow('pending....return').info()
