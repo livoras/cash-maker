@@ -12,9 +12,9 @@ var testing = false
 
 if (!testing) {
   var LEN = 1000
-  var gapToBuy = 4 // 低于 (均线 - gapToBuy) 就去买
-  var gapToSell = 2 // 高于 (买入价格 + gapToSell) 就去卖
-  var lowerGapToSell = -2 // 亏损了多少就卖
+  var gapToBuy = -2 // 低于 (均线 - gapToBuy) 就去买
+  var gapToSell = 4 // 高于 (买入价格 + gapToSell) 就去卖
+  var lowerGapToSell = -4 // 亏损：低于 (均线 - gapToBuy) 就卖
   var TIME_TO_WAIT = 1000 * 15 * 30 // 等 15 分钟再交易
 } else {
   var LEN = 10
@@ -94,9 +94,9 @@ var pending = false
 
 function trade () {
   if (pending) return log.yellow('pending....return').info()
+  var dist = lastPrice - avgPrice
+  log.blue('Money lastPrice - avgPrice').red(dist).info()
   if (hasBtc()) {
-    var dist = lastPrice - boughtPrice
-    log.blue('Money lastPrice - boughtPrice ').red(dist).info()
     if (dist >= gapToSell || dist <= lowerGapToSell) {
       log.blue('Sell out : ' + lastPrice).info()
       pending = true
@@ -111,9 +111,7 @@ function trade () {
       log.yellow('Waiting to sell...').info()
     }
   } else {
-    var dist = avgPrice - lastPrice
-    log.blue('Money avgPrice - lastPrice ').red(dist).info()
-    if (dist >= gapToBuy) {
+    if (dist <= gapToBuy) {
       log.blue('Buy in : ' + lastPrice).info()
       pending = true
       utils.buyAll(info, function (data) {
